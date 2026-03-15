@@ -42,10 +42,10 @@ app.use("/api/skills", skillRoutes)
 if (process.env.NODE_ENV === "production") {
   const frontendPath = path.join(__dirname, "../../frontend/dist")
   app.use(express.static(frontendPath))
-  app.get("*", (_req: Request, res: Response) => {
+  app.get("/{*path}", (_req: Request, res: Response) => {
     res.sendFile(path.join(frontendPath, "index.html"))
   })
-} else {
+}else {
   // ── Health check (dev only) ──────────────────────────────────────
   app.get('/', (_req: Request, res: Response) => {
     res.json({
