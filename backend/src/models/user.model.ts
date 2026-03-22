@@ -56,12 +56,12 @@ export interface IUser extends Document {
 
 const userSchema = new Schema<IUser>({
     name:{
-        type:String,
-        required:[true, 'name is required '],
-        trime:true,
-        minlength:[2,"Name must be at least 2 characters"],
-        maxlength:[50, "Name must be at most 50 characters"]
-    },
+  type: String,
+  required: [true, 'name is required'],
+  trim: true,    // ← was "trime"
+  minlength: [2, "Name must be at least 2 characters"],
+  maxlength: [50, "Name must be at most 50 characters"]
+},
 
      username: {
       type: String,
@@ -195,8 +195,8 @@ const userSchema = new Schema<IUser>({
 
 
 // ── Indexes ────────────────────────────────────────────────────────
-userSchema.index({ email: 1 }, { unique: true })
-userSchema.index({ username: 1 }, { unique: true })
+//userSchema.index({ email: 1 }, { unique: true })
+
 
 // ── Helper method — check if account is locked ────────────────────
 userSchema.methods.isLocked = function (): boolean {
