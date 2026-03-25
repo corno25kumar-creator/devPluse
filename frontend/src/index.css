@@ -1,1 +1,6 @@
 @import "tailwindcss";
+@keyframes shimmer {
+  100% {
+    mask-position: 200% 0;
+  }
+}
