@@ -8,7 +8,7 @@ import { Goals } from "./pages/Goals";
 import { Settings } from "./pages/Settings";
 import { Profile } from "./pages/Profile";
 import { Notifications } from "./pages/Notifications";
-import { Sessions } from "./pages/Sessions/Sessions";
+import { Sessions } from "./pages/Sessions";
 import { Layout } from "./layout/Layout";
 export const router = createBrowserRouter([
   {
