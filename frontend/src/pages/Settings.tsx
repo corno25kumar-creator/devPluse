@@ -1,207 +1,360 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "motion/react";
-import { 
-  Terminal, LayoutDashboard, Target, Code2, Bell, Settings as SettingsIcon, LogOut,  ChevronDown, User,
-  Moon, Sun, Download, Database, AlertTriangle, Link2, Lock, Mail,  Clock
+import {
+  Moon, Sun, Download, Database, AlertTriangle,
+  Lock, Mail,  CheckCircle2, Loader2,
 } from "lucide-react";
-import { Link, useNavigate } from "react-router";
+import { settingsApi } from "../api/settings.api";
+import type { PrivacySettings } from "../types/settings.types";
+
+// ── Helper: download a file in browser ────────────────────────
+const downloadFile = (content: string, filename: string, type: string) => {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  a.click();
+  URL.revokeObjectURL(url);
+};
 
 export const Settings = () => {
-  const navigate = useNavigate();
-  const handleLogout = () => navigate("/");
 
+  // ── Theme (local only — no backend) ───────────────────────
   const [theme, setTheme] = useState("light");
-  const [emails, setEmails] = useState({ deadline: true, streak: true, weekly: false });
-  const [privacy, setPrivacy] = useState({ publicProfile: true, shareActivity: false });
 
+  // ── Email prefs (local only — no backend endpoint) ────────
+  const [emails, setEmails] = useState({
+    deadline: true,
+    streak: true,
+    weekly: false,
+  });
+
+  // ── Privacy Settings ───────────────────────────────────────
+  const [privacy, setPrivacy] = useState<PrivacySettings>({
+    profileVisibility: "public",
+    hideStats: false,
+  });
+  const [privacyLoading, setPrivacyLoading] = useState(false);
+  const [privacySaved, setPrivacySaved] = useState(false);
+
+  // ── Export state ───────────────────────────────────────────
+  const [exportingJson, setExportingJson] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
+
+  // ── Fetch privacy on mount ─────────────────────────────────
+  useEffect(() => {
+    const fetchPrivacy = async () => {
+      try {
+        const data = await settingsApi.getPrivacy();
+        setPrivacy(data);
+      } catch (err) {
+        console.error("Privacy fetch failed:", err);
+      }
+    };
+    fetchPrivacy();
+  }, []);
+
+  // ── Save privacy ───────────────────────────────────────────
+  const handleSavePrivacy = async () => {
+    try {
+      setPrivacyLoading(true);
+      const updated = await settingsApi.updatePrivacy(privacy);
+      setPrivacy(updated);
+      setPrivacySaved(true);
+      setTimeout(() => setPrivacySaved(false), 2500);
+    } catch (err) {
+      console.error("Privacy update failed:", err);
+    } finally {
+      setPrivacyLoading(false);
+    }
+  };
+
+  // ── Export JSON ────────────────────────────────────────────
+  const handleExportJson = async () => {
+    try {
+      setExportingJson(true);
+      const data = await settingsApi.exportJson();
+      downloadFile(
+        JSON.stringify(data, null, 2),
+        `devpulse-export-${new Date().toISOString().split("T")[0]}.json`,
+        "application/json"
+      );
+    } catch (err) {
+      console.error("JSON export failed:", err);
+    } finally {
+      setExportingJson(false);
+    }
+  };
+
+  // ── Export CSV ─────────────────────────────────────────────
+  const handleExportCsv = async () => {
+    try {
+      setExportingCsv(true);
+      const csv = await settingsApi.exportCsv();
+      downloadFile(
+        csv,
+        `devpulse-export-${new Date().toISOString().split("T")[0]}.csv`,
+        "text/csv"
+      );
+    } catch (err) {
+      console.error("CSV export failed:", err);
+    } finally {
+      setExportingCsv(false);
+    }
+  };
+
+  // ── Toggle helper ──────────────────────────────────────────
+  const Toggle = ({
+    checked,
+    onChange,
+  }: {
+    checked: boolean;
+    onChange: () => void;
+  }) => (
+    <button
+      type="button"
+      onClick={onChange}
+      className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors duration-200 focus:outline-none ${
+        checked ? "bg-indigo-600" : "bg-slate-200"
+      }`}
+    >
+      <span
+        className={`inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform duration-200 ${
+          checked ? "translate-x-6" : "translate-x-1"
+        }`}
+      />
+    </button>
+  );
+
+  // ── JSX ────────────────────────────────────────────────────
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 flex font-sans overflow-hidden">
-      {/* Sidebar */}
-      <aside className="w-64 border-r border-slate-200 bg-white hidden md:flex flex-col z-20 relative">
-        <div className="h-16 flex items-center px-6 border-b border-slate-200">
-          <Link to="/" className="flex items-center gap-2">
-            <div className="h-8 w-8 bg-indigo-600 rounded-lg flex items-center justify-center shadow-sm">
-              <Terminal className="text-white h-5 w-5" />
-            </div>
-            <span className="text-slate-900 font-bold text-lg tracking-tight">DevTrack</span>
-          </Link>
-        </div>
-        <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
-          <p className="px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4">Overview</p>
-          <Link to="/dashboard" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium">
-            <LayoutDashboard className="h-5 w-5" /> Dashboard
-          </Link>
-          <Link to="/sessions" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium">
-            <Clock className="h-5 w-5" /> Sessions
-          </Link>
-          <Link to="/goals" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium">
-            <Target className="h-5 w-5" /> Goals
-          </Link>
-          <Link to="/skills" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium">
-            <Code2 className="h-5 w-5" /> Skills
-          </Link>
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans">
 
-          <p className="px-2 text-xs font-semibold text-slate-400 uppercase tracking-wider mb-4 mt-8">Account</p>
-          <Link to="/profile" className="flex items-center gap-3 px-3 py-2.5 rounded-lg text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors font-medium">
-            <User className="h-5 w-5" /> Profile
-          </Link>
-          <Link to="/settings" className="flex items-center gap-3 px-3 py-2.5 rounded-lg bg-indigo-50 text-indigo-700 font-medium transition-colors">
-            <SettingsIcon className="h-5 w-5 text-indigo-600" /> Settings
-          </Link>
-        </nav>
-        <div className="p-4 border-t border-slate-200">
-          <button onClick={handleLogout} className="flex items-center gap-3 px-3 py-2.5 w-full rounded-lg text-slate-600 hover:bg-red-50 hover:text-red-600 transition-colors font-medium">
-            <LogOut className="h-5 w-5" /> Log out
-          </button>
-        </div>
-      </aside>
+      <main className="flex flex-col min-w-0 bg-slate-50/50 h-screen overflow-hidden">
 
-      {/* Main Content */}
-      <main className="flex-1 flex flex-col min-w-0 bg-slate-50/50 h-screen overflow-hidden">
         {/* Header */}
-        <header className="h-16 border-b border-slate-200 bg-white/80 backdrop-blur-xl flex items-center justify-between px-6 z-10 flex-shrink-0">
-          <div className="flex items-center md:hidden">
-             <Terminal className="text-indigo-600 h-6 w-6" />
-          </div>
-          <div className="hidden md:flex items-center gap-3">
-             <h1 className="text-lg font-semibold text-slate-800">Account Settings</h1>
-          </div>
-          <div className="flex items-center gap-4">
-            <Link to="/notifications" className="relative p-2 text-slate-400 hover:text-slate-600 transition-colors rounded-full hover:bg-slate-100">
-              <Bell className="h-5 w-5" />
-            </Link>
-            <Link to="/profile" className="flex items-center gap-2 pl-4 border-l border-slate-200 cursor-pointer group">
-              <div className="h-8 w-8 rounded-full bg-gradient-to-tr from-indigo-500 to-purple-500 shadow-sm" />
-              <ChevronDown className="h-4 w-4 text-slate-400 group-hover:text-slate-600 transition-colors" />
-            </Link>
-          </div>
+        <header className="h-16 border-b border-slate-200 bg-white flex items-center px-6 z-10 shrink-0">
+          <h1 className="text-lg font-semibold text-slate-800">Account Settings</h1>
         </header>
 
         {/* Scrollable Workspace */}
         <div className="flex-1 overflow-y-auto p-4 lg:p-8">
           <div className="max-w-4xl mx-auto space-y-8">
-            
-            {/* Appearance Section */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-               <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                 <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                   {theme === 'light' ? <Sun className="h-5 w-5 text-indigo-500" /> : <Moon className="h-5 w-5 text-indigo-500" />}
-                   Appearance
-                 </h2>
-                 <p className="text-sm text-slate-500 mt-1">Dark / light mode preferences.</p>
-               </div>
-               <div className="p-6">
-                  <div className="flex gap-4">
-                     <button onClick={() => setTheme('light')} className={`flex-1 p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${theme === 'light' ? 'border-indigo-500 bg-indigo-50/50 text-indigo-700' : 'border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
-                        <Sun className="h-8 w-8" />
-                        <span className="font-semibold">Light Mode</span>
-                     </button>
-                     <button onClick={() => setTheme('dark')} className={`flex-1 p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${theme === 'dark' ? 'border-indigo-500 bg-indigo-50/50 text-indigo-700' : 'border-slate-200 text-slate-600 hover:border-indigo-300'}`}>
-                        <Moon className="h-8 w-8" />
-                        <span className="font-semibold">Dark Mode</span>
-                     </button>
-                  </div>
-               </div>
+
+            {/* ── Appearance ──────────────────────────────── */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
+              className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  {theme === "light"
+                    ? <Sun className="h-5 w-5 text-indigo-500" />
+                    : <Moon className="h-5 w-5 text-indigo-500" />}
+                  Appearance
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">Dark / light mode preferences.</p>
+              </div>
+              <div className="p-6">
+                <div className="flex gap-4">
+                  <button
+                    onClick={() => setTheme("light")}
+                    className={`flex-1 p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${
+                      theme === "light"
+                        ? "border-indigo-500 bg-indigo-50/50 text-indigo-700"
+                        : "border-slate-200 text-slate-600 hover:border-indigo-300"
+                    }`}
+                  >
+                    <Sun className="h-8 w-8" />
+                    <span className="font-semibold">Light Mode</span>
+                  </button>
+                  <button
+                    onClick={() => setTheme("dark")}
+                    className={`flex-1 p-4 rounded-xl border-2 flex flex-col items-center gap-3 transition-all ${
+                      theme === "dark"
+                        ? "border-indigo-500 bg-indigo-50/50 text-indigo-700"
+                        : "border-slate-200 text-slate-600 hover:border-indigo-300"
+                    }`}
+                  >
+                    <Moon className="h-8 w-8" />
+                    <span className="font-semibold">Dark Mode</span>
+                  </button>
+                </div>
+              </div>
             </motion.div>
 
-            {/* Notifications Preferences */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-               <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                 <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
-                   <Mail className="h-5 w-5 text-indigo-500" /> Notification Settings
-                 </h2>
-                 <p className="text-sm text-slate-500 mt-1">Manage what we email you about.</p>
-               </div>
-               <div className="p-6 space-y-4">
-                  {[
-                    { key: 'deadline', label: 'Goal deadline email reminder', desc: 'Get notified 3 days before a goal deadline.' },
-                    { key: 'streak', label: 'Streak broken alert', desc: 'Get an alert if your daily streak is about to end.' },
-                    { key: 'weekly', label: 'Weekly progress summary email', desc: 'A recap of your sessions and XP earned.' }
-                  ].map((item) => (
-                    <label key={item.key} className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:border-indigo-200 transition-colors">
-                      <div>
-                        <p className="text-sm font-semibold text-slate-800">{item.label}</p>
-                        <p className="text-xs text-slate-500">{item.desc}</p>
-                      </div>
-                      <div className="relative inline-block w-10 align-middle select-none transition duration-200 ease-in">
-                          <input type="checkbox" checked={(emails as any)[item.key]} onChange={() => setEmails(e => ({...e, [item.key]: !e[item.key as keyof typeof emails]}))} className="toggle-checkbox absolute block w-5 h-5 rounded-full bg-white border-4 appearance-none cursor-pointer border-slate-300 checked:right-0 checked:border-indigo-500 checked:bg-indigo-500 transition-all duration-300" style={{ right: (emails as any)[item.key] ? '0' : '1.25rem' }}/>
-                          <div className={`toggle-label block overflow-hidden h-5 rounded-full bg-slate-300 cursor-pointer ${(emails as any)[item.key] ? 'bg-indigo-200' : ''}`}></div>
-                      </div>
-                    </label>
-                  ))}
-               </div>
+            {/* ── Notification Preferences ─────────────────── */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+              className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+            >
+              <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                  <Mail className="h-5 w-5 text-indigo-500" /> Notification Settings
+                </h2>
+                <p className="text-sm text-slate-500 mt-1">Manage what we email you about.</p>
+              </div>
+              <div className="p-6 space-y-4">
+                {[
+                  { key: "deadline", label: "Goal deadline reminder", desc: "Get notified 3 days before a goal deadline." },
+                  { key: "streak", label: "Streak broken alert", desc: "Get an alert if your daily streak is about to end." },
+                  { key: "weekly", label: "Weekly progress summary", desc: "A recap of your sessions and XP earned." },
+                ].map((item) => (
+                  <div
+                    key={item.key}
+                    className="flex items-center justify-between p-4 bg-slate-50 border border-slate-200 rounded-xl"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">{item.label}</p>
+                      <p className="text-xs text-slate-500 mt-0.5">{item.desc}</p>
+                    </div>
+                    <Toggle
+                      checked={(emails as any)[item.key]}
+                      onChange={() =>
+                        setEmails((e) => ({ ...e, [item.key]: !(e as any)[item.key] }))
+                      }
+                    />
+                  </div>
+                ))}
+              </div>
             </motion.div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-              {/* Privacy & Accounts */}
-              <div className="space-y-8">
-                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                   <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Lock className="h-5 w-5 text-indigo-500" /> Privacy Settings</h2>
-                   </div>
-                   <div className="p-6 space-y-4">
-                      <label className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-700">Make profile public</span>
-                        <input type="checkbox" checked={privacy.publicProfile} onChange={() => setPrivacy(p => ({...p, publicProfile: !p.publicProfile}))} className="accent-indigo-600 h-4 w-4" />
-                      </label>
-                      <label className="flex items-center justify-between">
-                        <span className="text-sm font-medium text-slate-700">Share activity on feed</span>
-                        <input type="checkbox" checked={privacy.shareActivity} onChange={() => setPrivacy(p => ({...p, shareActivity: !p.shareActivity}))} className="accent-indigo-600 h-4 w-4" />
-                      </label>
-                   </div>
-                 </motion.div>
 
-                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                   <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Link2 className="h-5 w-5 text-indigo-500" /> Connected Accounts</h2>
-                   </div>
-                   <div className="p-6 space-y-4">
-                      <div className="flex items-center justify-between p-3 border border-slate-200 rounded-xl">
-                         <div className="flex items-center gap-3">
-                           <Github className="h-5 w-5 text-slate-800" />
-                           <span className="text-sm font-medium text-slate-700">GitHub</span>
-                         </div>
-                         <button className="text-xs font-semibold text-slate-500 hover:text-red-600 transition-colors">Disconnect</button>
-                      </div>
-                      <button className="w-full py-3 border border-dashed border-slate-300 rounded-xl text-sm font-medium text-slate-600 hover:bg-slate-50 hover:border-indigo-300 hover:text-indigo-600 transition-colors">
-                         + Connect New Account
-                      </button>
-                   </div>
-                 </motion.div>
-              </div>
+              {/* ── Privacy Settings ─────────────────────── */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
+                className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+              >
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <Lock className="h-5 w-5 text-indigo-500" /> Privacy Settings
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">Control who can see your profile.</p>
+                </div>
+                <div className="p-6 space-y-5">
 
-              {/* Data & Danger Zone */}
-              <div className="space-y-8">
-                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
-                   <div className="p-6 border-b border-slate-100 bg-slate-50/50">
-                     <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2"><Database className="h-5 w-5 text-indigo-500" /> Export All Data — JSON / CSV</h2>
-                   </div>
-                   <div className="p-6">
-                      <p className="text-sm text-slate-500 mb-6">Download a copy of all your sessions, goals, and skills data. Your data is yours.</p>
-                      <div className="flex gap-3">
-                        <button className="flex-1 bg-slate-900 hover:bg-slate-800 text-white py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors">
-                          <Download className="h-4 w-4" /> CSV Format
-                        </button>
-                        <button className="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-800 py-2.5 rounded-xl text-sm font-medium flex items-center justify-center gap-2 transition-colors">
-                          <Database className="h-4 w-4" /> JSON Format
-                        </button>
-                      </div>
-                   </div>
-                 </motion.div>
+                  {/* Profile Visibility */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">Profile visibility</p>
+                      <p className="text-xs text-slate-500 mt-0.5">
+                        Currently: <span className="font-medium text-indigo-600 capitalize">{privacy.profileVisibility}</span>
+                      </p>
+                    </div>
+                    <Toggle
+                      checked={privacy.profileVisibility === "public"}
+                      onChange={() =>
+                        setPrivacy((p) => ({
+                          ...p,
+                          profileVisibility:
+                            p.profileVisibility === "public" ? "private" : "public",
+                        }))
+                      }
+                    />
+                  </div>
 
-                 <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="bg-red-50 border border-red-200 rounded-2xl shadow-sm overflow-hidden">
-                   <div className="p-6 border-b border-red-200/60">
-                     <h2 className="text-lg font-bold text-red-700 flex items-center gap-2"><AlertTriangle className="h-5 w-5" /> Danger Zone — Delete Account</h2>
-                   </div>
-                   <div className="p-6">
-                      <p className="text-sm text-red-600 mb-6">Once you delete your account, there is no going back. Please be certain.</p>
-                      <button className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl text-sm font-bold shadow-sm transition-colors">
-                        Permanently Delete Account
-                      </button>
-                   </div>
-                 </motion.div>
-              </div>
+                  {/* Hide Stats */}
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm font-semibold text-slate-800">Hide stats</p>
+                      <p className="text-xs text-slate-500 mt-0.5">Hide XP and level from public view</p>
+                    </div>
+                    <Toggle
+                      checked={privacy.hideStats}
+                      onChange={() =>
+                        setPrivacy((p) => ({ ...p, hideStats: !p.hideStats }))
+                      }
+                    />
+                  </div>
+
+                  {/* Save Button */}
+                  <button
+                    onClick={handleSavePrivacy}
+                    disabled={privacyLoading}
+                    className="w-full flex items-center justify-center gap-2 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-60 text-white py-2.5 rounded-xl font-semibold text-sm transition-colors"
+                  >
+                    {privacyLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : privacySaved ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : null}
+                    {privacyLoading ? "Saving..." : privacySaved ? "Saved!" : "Save Privacy Settings"}
+                  </button>
+                </div>
+              </motion.div>
+
+              {/* ── Export Data ───────────────────────────── */}
+              <motion.div
+                initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
+                className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden"
+              >
+                <div className="p-6 border-b border-slate-100 bg-slate-50/50">
+                  <h2 className="text-lg font-bold text-slate-800 flex items-center gap-2">
+                    <Database className="h-5 w-5 text-indigo-500" /> Export Your Data
+                  </h2>
+                  <p className="text-sm text-slate-500 mt-1">Download all your sessions, goals, and skills.</p>
+                </div>
+                <div className="p-6">
+                  <p className="text-sm text-slate-500 mb-6">
+                    Your data is yours. Export anytime in JSON or CSV format.
+                  </p>
+                  <div className="flex gap-3">
+                    <button
+                      onClick={handleExportCsv}
+                      disabled={exportingCsv}
+                      className="flex-1 bg-slate-900 hover:bg-slate-800 disabled:opacity-60 text-white py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+                    >
+                      {exportingCsv
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Download className="h-4 w-4" />}
+                      {exportingCsv ? "Exporting..." : "CSV"}
+                    </button>
+                    <button
+                      onClick={handleExportJson}
+                      disabled={exportingJson}
+                      className="flex-1 bg-slate-100 hover:bg-slate-200 disabled:opacity-60 text-slate-800 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 transition-colors"
+                    >
+                      {exportingJson
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Database className="h-4 w-4" />}
+                      {exportingJson ? "Exporting..." : "JSON"}
+                    </button>
+                  </div>
+                </div>
+              </motion.div>
+
             </div>
+
+            {/* ── Danger Zone ──────────────────────────────── */}
+            <motion.div
+              initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }}
+              className="bg-red-50 border border-red-200 rounded-2xl shadow-sm overflow-hidden"
+            >
+              <div className="p-6 border-b border-red-200/60">
+                <h2 className="text-lg font-bold text-red-700 flex items-center gap-2">
+                  <AlertTriangle className="h-5 w-5" /> Danger Zone
+                </h2>
+                <p className="text-sm text-red-500 mt-1">Irreversible actions — proceed with caution.</p>
+              </div>
+              <div className="p-6">
+                <p className="text-sm text-red-600 mb-6">
+                  Once you delete your account, all your data will be permanently removed. This cannot be undone.
+                </p>
+                <button
+                  onClick={() => {
+                    if (confirm("Are you absolutely sure? This will permanently delete your account and all data.")) {
+                      // DELETE /auth/account — implement when needed
+                      alert("Account deletion coming soon.");
+                    }
+                  }}
+                  className="w-full bg-red-600 hover:bg-red-700 text-white py-3 rounded-xl text-sm font-bold shadow-sm transition-colors"
+                >
+                  Permanently Delete Account
+                </button>
+              </div>
+            </motion.div>
 
           </div>
         </div>

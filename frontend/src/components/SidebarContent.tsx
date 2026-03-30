@@ -1,7 +1,7 @@
 import { Link } from 'react-router';
 import { 
   Terminal, LayoutDashboard, Target, Code2, 
-  Settings, LogOut, Clock 
+  Settings, LogOut, Clock , Bell
 } from 'lucide-react';
 import { type UseMutationResult } from '@tanstack/react-query';
 
@@ -24,6 +24,7 @@ const navItems = [
   { path: '/sessions', label: 'Sessions', icon: Clock },
   { path: '/goals', label: 'Goals', icon: Target },
   { path: '/skills', label: 'Skills', icon: Code2 },
+ 
 ];
 
 interface SidebarProps {
@@ -84,6 +85,16 @@ export const SidebarContent = ({
         >
           <Settings className="h-5 w-5" />
           Settings
+        </Link>
+         <Link
+          to="/notifications"
+          onClick={() => setIsMobileMenuOpen(false)}
+          className={`flex items-center gap-3 px-3 py-2.5 rounded-lg font-medium transition-colors ${
+            location.pathname === '/notification' ? 'bg-indigo-50 text-indigo-700' : 'text-slate-600 hover:bg-slate-50'
+          }`}
+        >
+          <Bell className="h-5 w-5" />
+          notifications
         </Link>
       </nav>
 
