@@ -8,12 +8,19 @@ import { format, isToday, isYesterday, parseISO } from "date-fns";
 import { useSessionStore } from "../store/Sessionstore";
 import type { Session } from "../store/Sessionstore";
 import { sessionApi } from "../api/sessions.api";
+import { useSkillStore } from "../store/skillsStore";
+import { skillApi } from "../api/skills.api";
 
 export const Sessions = () => {
 
-  // ── Store ──────────────────────────────────────────────────
-  const { sessions, setSessions, addSession, updateSession, removeSession, setLoading } =
-    useSessionStore();
+  // ── Session Store ──────────────────────────────────────────
+  const {
+    sessions, setSessions, addSession, updateSession,
+    removeSession, setLoading,
+  } = useSessionStore();
+
+  // ── Skill Store ────────────────────────────────────────────
+  const { skills, setSkills } = useSkillStore();
 
   // ── Page State ─────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -22,7 +29,6 @@ export const Sessions = () => {
   // ── Timer State ────────────────────────────────────────────
   const [isTimerRunning, setIsTimerRunning] = useState(false);
   const [timerSeconds, setTimerSeconds] = useState(0);
-  // useRef so handleStopTimer always reads latest value — no stale closure
   const timerSecondsRef = useRef(0);
 
   // ── Modal State ────────────────────────────────────────────
@@ -49,7 +55,7 @@ export const Sessions = () => {
       interval = setInterval(() => {
         setTimerSeconds((s) => {
           const next = s + 1;
-          timerSecondsRef.current = next; // keep ref in sync
+          timerSecondsRef.current = next;
           return next;
         });
       }, 1000);
@@ -57,20 +63,24 @@ export const Sessions = () => {
     return () => clearInterval(interval);
   }, [isTimerRunning]);
 
-  // ── Fetch Sessions on Mount ────────────────────────────────
+  // ── Fetch Sessions + Skills on Mount ───────────────────────
   useEffect(() => {
-    const fetchSessions = async () => {
+    const fetchAll = async () => {
       try {
         setLoading(true);
-        const data = await sessionApi.getAll();
-        setSessions(data.sessions, data.pagination);
+        const [sessionData, skillData] = await Promise.all([
+          sessionApi.getAll(),
+          skillApi.getAll(),
+        ]);
+        setSessions(sessionData.sessions, sessionData.pagination);
+        setSkills(skillData.skills, skillData.counts, skillData.pagination);
       } catch (err) {
-        console.error("Sessions fetch failed:", err);
+        console.error("Fetch failed:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchSessions();
+    fetchAll();
   }, []);
 
   // ── Helpers ────────────────────────────────────────────────
@@ -81,7 +91,12 @@ export const Sessions = () => {
     return `${h.toString().padStart(2, "0")}:${m.toString().padStart(2, "0")}:${s.toString().padStart(2, "0")}`;
   };
 
-  // prefillDuration param — used when called from timer stop
+  // skillId se skill ka naam lo
+  const getSkillName = (skillId: string | null) => {
+    if (!skillId) return null;
+    return skills.find((s) => s._id === skillId)?.name || null;
+  };
+
   const openLogModal = (session?: Session, prefillDuration?: number) => {
     setFormError("");
     setTagInput("");
@@ -113,7 +128,6 @@ export const Sessions = () => {
 
   const handleStopTimer = () => {
     setIsTimerRunning(false);
-    // Read from ref — always latest, no stale closure problem
     const minutes = Math.max(1, Math.floor(timerSecondsRef.current / 60));
     openLogModal(undefined, minutes);
   };
@@ -248,12 +262,12 @@ export const Sessions = () => {
               {isTimerRunning ? <Square className="h-4 w-4" /> : <Play className="h-4 w-4" />}
               {isTimerRunning ? "Stop & Log" : "Start Timer"}
             </button>
-            {/* <button
+            <button
               onClick={() => openLogModal()}
               className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-colors shadow-sm"
             >
               <Plus className="h-4 w-4" /> Log Session
-            </button> */}
+            </button>
           </div>
         </header>
 
@@ -366,6 +380,8 @@ export const Sessions = () => {
                           className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow group relative"
                         >
                           <div className="flex flex-col sm:flex-row sm:items-start gap-4 sm:gap-6">
+
+                            {/* Duration */}
                             <div className="flex flex-row sm:flex-col items-center gap-3 sm:gap-1 sm:w-24 shrink-0 text-center">
                               <div className="w-12 h-12 rounded-full bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
                                 <Clock className="h-5 w-5" />
@@ -376,6 +392,7 @@ export const Sessions = () => {
                               </div>
                             </div>
 
+                            {/* Content */}
                             <div className="flex-1 min-w-0">
                               <h4 className="text-lg font-semibold text-slate-900 mb-1 pr-10">{session.title}</h4>
                               {session.notes && (
@@ -385,28 +402,42 @@ export const Sessions = () => {
                               )}
                               <div className="flex flex-wrap items-center gap-2 mt-auto">
                                 {session.tags.map((tag) => (
-                                  <span key={tag} className="px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1">
+                                  <span
+                                    key={tag}
+                                    className="px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide bg-slate-100 text-slate-600 border border-slate-200 flex items-center gap-1"
+                                  >
                                     <TagIcon className="h-3 w-3 opacity-50" /> {tag}
                                   </span>
                                 ))}
-                                {session.goalId && (
-                                  <span className="px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
-                                    <Target className="h-3 w-3 opacity-70" /> Goal: {session.goalId}
+                                {/* skillId se naam lookup */}
+                                {session.skillId && getSkillName(session.skillId) && (
+                                  <span className="px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
+                                    <Code2 className="h-3 w-3 opacity-70" /> {getSkillName(session.skillId)}
                                   </span>
                                 )}
-                                {session.skillId && (
-                                  <span className="px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center gap-1">
-                                    <Code2 className="h-3 w-3 opacity-70" /> Skill: {session.skillId}
+                                {/* goalId — naam baad mein goals store se aayega */}
+                                {session.goalId && (
+                                  <span className="px-2.5 py-1 rounded-md text-[11px] font-bold tracking-wide bg-blue-50 text-blue-700 border border-blue-200 flex items-center gap-1">
+                                    <Target className="h-3 w-3 opacity-70" /> Goal linked
                                   </span>
                                 )}
                               </div>
                             </div>
 
+                            {/* Actions */}
                             <div className="absolute top-4 right-4 flex items-center opacity-0 group-hover:opacity-100 transition-opacity gap-1 bg-white/90 backdrop-blur-sm p-1 rounded-lg border border-slate-100 shadow-sm">
-                              <button onClick={() => openLogModal(session)} className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors" title="Edit session">
+                              <button
+                                onClick={() => openLogModal(session)}
+                                className="p-1.5 text-slate-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                                title="Edit session"
+                              >
                                 <Edit2 className="h-4 w-4" />
                               </button>
-                              <button onClick={() => deleteSession(session._id)} className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors" title="Delete session">
+                              <button
+                                onClick={() => deleteSession(session._id)}
+                                className="p-1.5 text-slate-500 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                title="Delete session"
+                              >
                                 <Trash2 className="h-4 w-4" />
                               </button>
                             </div>
@@ -423,16 +454,28 @@ export const Sessions = () => {
         </div>
       </main>
 
-      {/* Log / Edit Modal */}
+      {/* ── Log / Edit Modal ───────────────────────────────── */}
       <AnimatePresence>
         {isLogModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setIsLogModalOpen(false)} className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" />
-            <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: 20 }} className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]">
-
+            <motion.div
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => setIsLogModalOpen(false)}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm"
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              className="relative bg-white rounded-xl shadow-2xl w-full max-w-3xl border border-slate-200 overflow-hidden flex flex-col max-h-[90vh]"
+            >
+              {/* Modal Header */}
               <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 shrink-0">
                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
-                  {editingSessionId ? <Edit2 className="h-5 w-5 text-[#5e43f3]" /> : <Plus className="h-5 w-5 text-[#5e43f3]" />}
+                  {editingSessionId
+                    ? <Edit2 className="h-5 w-5 text-[#5e43f3]" />
+                    : <Plus className="h-5 w-5 text-[#5e43f3]" />
+                  }
                   {editingSessionId ? "Edit Session" : "Log a Session"}
                 </h2>
                 <button onClick={() => setIsLogModalOpen(false)} className="text-slate-400 hover:text-slate-600 transition-colors">
@@ -440,6 +483,7 @@ export const Sessions = () => {
                 </button>
               </div>
 
+              {/* Modal Body */}
               <div className="p-6 overflow-y-auto flex-1">
                 {formError && (
                   <div className="mb-6 p-3 bg-red-50 border border-red-200 text-red-700 rounded-lg text-sm flex items-center gap-2 font-medium">
@@ -449,34 +493,71 @@ export const Sessions = () => {
 
                 <form id="session-form" onSubmit={handleSaveSession} className="space-y-6">
 
+                  {/* Title */}
                   <div>
                     <div className="flex justify-between items-end mb-1.5">
-                      <label className="block text-[15px] font-semibold text-slate-800">Title <span className="text-red-500">*</span></label>
+                      <label className="block text-[15px] font-semibold text-slate-800">
+                        Title <span className="text-red-500">*</span>
+                      </label>
                       <span className="text-sm text-slate-400">{formData.title.length}/120</span>
                     </div>
-                    <input type="text" maxLength={120} value={formData.title} onChange={(e) => setFormData({ ...formData, title: e.target.value })} placeholder="What did you work on? (e.g. Auth API Refactor)" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors placeholder:text-slate-400 text-slate-800" />
+                    <input
+                      type="text"
+                      maxLength={120}
+                      value={formData.title}
+                      onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                      placeholder="What did you work on? (e.g. Auth API Refactor)"
+                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors placeholder:text-slate-400 text-slate-800"
+                    />
                   </div>
 
+                  {/* Duration + Date */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                      <label className="block text-[15px] font-semibold text-slate-800 mb-1.5">Duration (minutes) <span className="text-red-500">*</span></label>
-                      <input type="number" min={1} max={1440} value={formData.duration || ""} onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })} placeholder="60" className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800" />
+                      <label className="block text-[15px] font-semibold text-slate-800 mb-1.5">
+                        Duration (minutes) <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="number"
+                        min={1}
+                        max={1440}
+                        value={formData.duration || ""}
+                        onChange={(e) => setFormData({ ...formData, duration: parseInt(e.target.value) || 0 })}
+                        placeholder="60"
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800"
+                      />
                       <p className="text-[13px] text-slate-500 mt-1.5">Min: 1, Max: 1440 (24h)</p>
                     </div>
                     <div>
-                      <label className="block text-[15px] font-semibold text-slate-800 mb-1.5">Date <span className="text-red-500">*</span></label>
-                      <input type="date" value={formData.date} onChange={(e) => setFormData({ ...formData, date: e.target.value })} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800 [color-scheme:light]" />
+                      <label className="block text-[15px] font-semibold text-slate-800 mb-1.5">
+                        Date <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800 [color-scheme:light]"
+                      />
                     </div>
                   </div>
 
+                  {/* Notes */}
                   <div>
                     <div className="flex justify-between items-end mb-1.5">
                       <label className="block text-[15px] font-semibold text-slate-800">Notes</label>
                       <span className="text-sm text-slate-400">{formData.notes.length}/2000</span>
                     </div>
-                    <textarea rows={4} maxLength={2000} value={formData.notes} onChange={(e) => setFormData({ ...formData, notes: e.target.value })} placeholder="Add detailed reflections, roadblocks, or implementation details..." className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors resize-none placeholder:text-slate-400 text-slate-800" />
+                    <textarea
+                      rows={4}
+                      maxLength={2000}
+                      value={formData.notes}
+                      onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+                      placeholder="Add detailed reflections, roadblocks, or implementation details..."
+                      className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors resize-none placeholder:text-slate-400 text-slate-800"
+                    />
                   </div>
 
+                  {/* Tags */}
                   <div>
                     <div className="flex justify-between items-end mb-1.5">
                       <label className="block text-[15px] font-semibold text-slate-800">Tags</label>
@@ -484,34 +565,62 @@ export const Sessions = () => {
                     </div>
                     <div className="w-full bg-white border border-slate-200 rounded-xl focus-within:ring-2 focus-within:ring-[#5e43f3] focus-within:border-transparent transition-colors p-2 flex flex-wrap gap-2 min-h-[50px]">
                       {formData.tags.map((tag) => (
-                        <span key={tag} className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-sm font-medium flex items-center gap-1.5 border border-indigo-100">
+                        <span
+                          key={tag}
+                          className="bg-indigo-50 text-indigo-700 px-3 py-1 rounded-lg text-sm font-medium flex items-center gap-1.5 border border-indigo-100"
+                        >
                           {tag}
-                          <button type="button" onClick={() => removeTag(tag)} className="hover:text-indigo-900 rounded-full p-0.5"><X className="h-3.5 w-3.5" /></button>
+                          <button type="button" onClick={() => removeTag(tag)} className="hover:text-indigo-900 rounded-full p-0.5">
+                            <X className="h-3.5 w-3.5" />
+                          </button>
                         </span>
                       ))}
                       {formData.tags.length < 10 && (
-                        <input type="text" value={tagInput} onChange={(e) => setTagInput(e.target.value)} onKeyDown={handleAddTag} placeholder={formData.tags.length === 0 ? "Type and press enter to add tags..." : "Add tag..."} className="flex-1 min-w-[200px] bg-transparent border-none focus:outline-none text-base px-2 py-1 placeholder:text-slate-400 text-slate-800" />
+                        <input
+                          type="text"
+                          value={tagInput}
+                          onChange={(e) => setTagInput(e.target.value)}
+                          onKeyDown={handleAddTag}
+                          placeholder={formData.tags.length === 0 ? "Type and press enter to add tags..." : "Add tag..."}
+                          className="flex-1 min-w-[200px] bg-transparent border-none focus:outline-none text-base px-2 py-1 placeholder:text-slate-400 text-slate-800"
+                        />
                       )}
                     </div>
                   </div>
 
+                  {/* Goal + Skill */}
                   <div className="pt-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Goal — baad mein goals store se populate hoga */}
                     <div>
                       <label className="text-[15px] font-semibold text-slate-800 mb-1.5 flex items-center gap-1.5">
                         <Target className="h-4 w-4 text-slate-400" /> Link to Goal
                       </label>
-                      <select value={formData.goalId} onChange={(e) => setFormData({ ...formData, goalId: e.target.value })} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800">
+                      <select
+                        value={formData.goalId}
+                        onChange={(e) => setFormData({ ...formData, goalId: e.target.value })}
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800"
+                      >
                         <option value="">None</option>
-                        {/* populated from goals store once Goals page is built */}
+                        {/* goals page banne ke baad yahan goals aayenge */}
                       </select>
                     </div>
+
+                    {/* Skill — real data from skillsStore */}
                     <div>
                       <label className="text-[15px] font-semibold text-slate-800 mb-1.5 flex items-center gap-1.5">
                         <Code2 className="h-4 w-4 text-slate-400" /> Link to Skill
                       </label>
-                      <select value={formData.skillId} onChange={(e) => setFormData({ ...formData, skillId: e.target.value })} className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800">
+                      <select
+                        value={formData.skillId}
+                        onChange={(e) => setFormData({ ...formData, skillId: e.target.value })}
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800"
+                      >
                         <option value="">None</option>
-                        {/* populated from skills store once Skills page is built */}
+                        {skills.map((skill) => (
+                          <option key={skill._id} value={skill._id}>
+                            {skill.name} ({skill.category})
+                          </option>
+                        ))}
                       </select>
                     </div>
                   </div>
@@ -519,13 +628,22 @@ export const Sessions = () => {
                 </form>
               </div>
 
+              {/* Modal Footer */}
               <div className="px-6 py-4 flex items-center justify-end gap-4 shrink-0 bg-white border-t border-slate-100">
-                <button onClick={() => setIsLogModalOpen(false)} className="px-5 py-2.5 font-semibold text-slate-600 hover:text-slate-800 transition-colors">Cancel</button>
-                <button type="submit" form="session-form" className="px-6 py-2.5 font-semibold text-white bg-[#5e43f3] hover:bg-[#4a35c4] rounded-xl transition-colors shadow-sm flex items-center gap-2">
+                <button
+                  onClick={() => setIsLogModalOpen(false)}
+                  className="px-5 py-2.5 font-semibold text-slate-600 hover:text-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  form="session-form"
+                  className="px-6 py-2.5 font-semibold text-white bg-[#5e43f3] hover:bg-[#4a35c4] rounded-xl transition-colors shadow-sm flex items-center gap-2"
+                >
                   <CheckCircle2 className="h-5 w-5" /> Save Session
                 </button>
               </div>
-
             </motion.div>
           </div>
         )}
