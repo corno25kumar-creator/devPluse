@@ -67,6 +67,9 @@ app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/notifications', notificationRoutes) 
 app.use('/api/settings', settingsRoutes)
 
+
+console.log(`object`)
+
 // ── Production Frontend Logic ─────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
   // Path to your frontend build folder
