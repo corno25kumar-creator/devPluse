@@ -67,7 +67,6 @@ app.use('/api/dashboard', dashboardRoutes)
 app.use('/api/notifications', notificationRoutes) 
 app.use('/api/settings', settingsRoutes)
 
-console.log(` hello the wor`)
 
 // ── Production Frontend Logic ─────────────────────────────────────
 if (process.env.NODE_ENV === "production") {
@@ -75,7 +74,7 @@ if (process.env.NODE_ENV === "production") {
   const frontendPath = path.resolve(process.cwd(), "..", "frontend", "dist");
   
   console.log("Serving frontend from:", frontendPath); // Log this to verify!
-  console.log(`it verify done `)
+ 
 
   // 1. Serve static files
   app.use(express.static(frontendPath));
