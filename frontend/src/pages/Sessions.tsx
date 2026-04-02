@@ -10,6 +10,8 @@ import type { Session } from "../store/Sessionstore";
 import { sessionApi } from "../api/sessions.api";
 import { useSkillStore } from "../store/skillsStore";
 import { skillApi } from "../api/skills.api";
+import { useGoalsStore } from "../store/useGoalStore";
+import { goalAPI } from "../api/goal.api";
 
 export const Sessions = () => {
 
@@ -21,6 +23,9 @@ export const Sessions = () => {
 
   // ── Skill Store ────────────────────────────────────────────
   const { skills, setSkills } = useSkillStore();
+
+  // ── Goal Store ────────────────────────────────────────────
+  const { goals, loadGoals } = useGoalsStore();
 
   // ── Page State ─────────────────────────────────────────────
   const [searchQuery, setSearchQuery] = useState("");
@@ -63,17 +68,22 @@ export const Sessions = () => {
     return () => clearInterval(interval);
   }, [isTimerRunning]);
 
-  // ── Fetch Sessions + Skills on Mount ───────────────────────
+  // ── Fetch Sessions + Skills + Goals on Mount ───────────────────────
   useEffect(() => {
     const fetchAll = async () => {
       try {
         setLoading(true);
-        const [sessionData, skillData] = await Promise.all([
-          sessionApi.getAll(),
-          skillApi.getAll(),
-        ]);
+        const [sessionData, skillData, goalData] = await Promise.all([
+            sessionApi.getAll(),
+            skillApi.getAll(),
+            loadGoals(),
+          ]);
+
+        
         setSessions(sessionData.sessions, sessionData.pagination);
         setSkills(skillData.skills, skillData.counts, skillData.pagination);
+       
+        
       } catch (err) {
         console.error("Fetch failed:", err);
       } finally {
@@ -530,7 +540,7 @@ export const Sessions = () => {
                     </div>
                     <div>
                       <label className="block text-[15px] font-semibold text-slate-800 mb-1.5">
-                        Date <span className="text-red-500">*</span>
+                        Date <span className="text-red-500"></span>
                       </label>
                       <input
                         type="date"
@@ -593,16 +603,20 @@ export const Sessions = () => {
                     {/* Goal — baad mein goals store se populate hoga */}
                     <div>
                       <label className="text-[15px] font-semibold text-slate-800 mb-1.5 flex items-center gap-1.5">
-                        <Target className="h-4 w-4 text-slate-400" /> Link to Goal
+                      <Target className="h-4 w-4 text-slate-400" /> Link to Goal
                       </label>
+                     {/* Find this section in your Modal Body */}
                       <select
                         value={formData.goalId}
                         onChange={(e) => setFormData({ ...formData, goalId: e.target.value })}
-                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800"
-                      >
-                        <option value="">None</option>
-                        {/* goals page banne ke baad yahan goals aayenge */}
-                      </select>
+                        className="w-full px-4 py-3 bg-white border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#5e43f3] focus:border-transparent transition-colors text-slate-800">
+                       <option value="">None</option>
+                         {goals.map((goal) => (
+                          <option key={goal._id} value={goal._id}>
+                          {goal.title} 
+                        </option>
+                      ))}
+                    </select>
                     </div>
 
                     {/* Skill — real data from skillsStore */}
