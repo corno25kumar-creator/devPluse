@@ -85,13 +85,14 @@ if (process.env.NODE_ENV === "production") {
    * It tells Express: "If it's not a health check or an API route, 
    * just give them the React app and let React Router handle the URL."
    */
- app.use((req: Request, res: Response, next) => {
-    // If the request is a GET and not looking for an API route
-    if (req.method === 'GET' && !req.path.startsWith('/auth') && !req.path.startsWith('/health')) {
-      return res.sendFile(path.join(frontendPath, "index.html"));
-    }
-    next();
-  });
+// Find this block in your app.ts and change it to this:
+app.use((req: Request, res: Response, next) => {
+  // Check for /api instead of /auth
+  if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/health')) {
+    return res.sendFile(path.join(frontendPath, "index.html"));
+  }
+  next();
+});
 
 } else {
   // 404 handler for development only

@@ -141,7 +141,7 @@ export const uploadAvatar = async (
   const processedBuffer = await sharp(req.file.buffer)
     .resize(400, 400, {
       fit: 'cover',
-      position: 'centre',
+      position: 'center',
     })
     .webp({ quality: 85 })
     .toBuffer()
