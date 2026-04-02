@@ -17,22 +17,20 @@ export const profileAPI = {
     api.patch<ProfileResponse>("/profile/me", data),
 
   /** POST /profile/avatar — multipart/form-data upload */
-  uploadAvatar: (file: File) => {
-    const formData = new FormData();
-    formData.append("avatar", file);
-    
-    return api.post<AvatarResponse>("/profile/avatar", formData, {
-      headers: { 
-        "Content-Type": "multipart/form-data" 
-      },
-    });
-  },
+  /** POST /profile/avatar — multipart/form-data upload */
+uploadAvatar: (formData: FormData) => {
+  return api.post<AvatarResponse>("/profile/avatar", formData, {
+    headers: {
+      "Content-Type": "multipart/form-data",
+    },
+  });
+},
 
   /** GET /profile/:username — Fetch a public profile by username */
   getPublicProfile: (username: string) =>
     api.get<ProfileResponse>(`/profile/${username}`),
 
   /** DELETE /profile/me - Permanent account deletion */
-  deleteAccount: () => 
-    api.delete("/profile/me"),
+  deleteAccount: (username: string) =>
+    api.delete("/profile/me", { data: { username } })
 };

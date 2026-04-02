@@ -89,46 +89,42 @@ export const useProfileStore = create<ProfileState>()(
       },
 
       // ── Avatar Upload ───────────────────────────────────────────────────────
-      uploadAvatar: async (file: File) => {
-        set({ uploadingAvatar: true, error: null, successMessage: null });
-        try {
-          const formData = new FormData();
-          formData.append("avatar", file);
+     uploadAvatar: async (file: File) => {
+  set({ uploadingAvatar: true, error: null, successMessage: null });
+  try {
+    const formData = new FormData();
+    formData.append("avatar", file);
 
-          const res = await profileAPI.uploadAvatar(formData);
-          const updatedUser = res.data.data.user;
+    const res = await profileAPI.uploadAvatar(formData);
+    const avatarUrl = res.data.data.avatarUrl; // ✅ correct path
 
-          set({ 
-            profile: updatedUser, 
-            uploadingAvatar: false, 
-            successMessage: "Avatar updated successfully!" 
-          });
-          
-          toast.success("Avatar uploaded!");
-        } catch (err) {
-          const message = errMsg(err, "Failed to upload avatar");
-          set({ uploadingAvatar: false, error: message });
-          toast.error(message);
-        }
-      },
+    set((s) => ({
+      profile: s.profile ? { ...s.profile, avatarUrl } : s.profile,
+      uploadingAvatar: false,
+      successMessage: "Avatar updated successfully!",
+    }));
+    toast.success("Avatar uploaded!");
+  } catch (err) {
+    const message = errMsg(err, "Failed to upload avatar");
+    set({ uploadingAvatar: false, error: message });
+    toast.error(message);
+  }
+},
 
       // ── Delete Account ──────────────────────────────────────────────────────
-      deleteAccount: async () => {
-        set({ deletingAccount: true, error: null });
-        try {
-          // Note: If your API requires the username for deletion, 
-          // pass it here: profileAPI.deleteAccount(get().profile?.username)
-          await profileAPI.deleteAccount(); 
-          set({ profile: null, deletingAccount: false });
-          toast.success("Account deleted.");
-        } catch (err) {
-          const message = errMsg(err, "Failed to delete account");
-          set({ deletingAccount: false, error: message });
-          toast.error(message);
-          throw err; 
-        }
-      },
-
+    deleteAccount: async (username: string) => {
+  set({ deletingAccount: true, error: null });
+  try {
+    await profileAPI.deleteAccount(username);
+    set({ profile: null, deletingAccount: false });
+    toast.success("Account deleted.");
+  } catch (err) {
+    const message = errMsg(err, "Failed to delete account");
+    set({ deletingAccount: false, error: message });
+    toast.error(message);
+    throw err;
+  }
+},
       clearMessages: () => set({ error: null, successMessage: null }),
     }),
     { name: "ProfileStore" }

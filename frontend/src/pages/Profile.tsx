@@ -2,15 +2,13 @@
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "motion/react";
 import {
-  Terminal, LayoutDashboard, Target, Code2, Bell,
-  Settings as SettingsIcon, LogOut, ChevronDown, User,
   Camera, Globe, Clock, Calendar, Activity, CheckCircle2,
   Trophy, Loader2, AlertCircle, X, Trash2,
 } from "lucide-react";
 import { Link, useNavigate } from "react-router";
 import { useProfileStore } from "../store/useProfilestore";
 import { useAuthStore } from "../store/useAuthStore";
-import type { UpdateProfilePayload } from "../api/profile.api";
+import type { UpdateProfilePayload } from "..//types/api.types";
 
 // ─── Timezone options ─────────────────────────────────────────────────────────
 const TIMEZONES = [
@@ -99,16 +97,31 @@ export const Profile = () => {
 
   const { logout } = useAuthStore();
 
-  const [draft, setDraft] = useState<UpdateProfilePayload>({});
+  const [draft, setDraft] = useState<UpdateProfilePayload>(() => 
+    profile ? {
+      name:           profile.name,
+      bio:            profile.bio ?? "",
+      currentRole:    profile.currentRole ?? "",
+      githubUsername: profile.githubUsername ?? "",
+      timezone:       profile.timezone,
+    } : {
+      name: "",
+      bio: "",
+      currentRole: "",
+      githubUsername: "",
+      timezone: "UTC",
+    }
+  );
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const initializedRef = useRef(false);
 
   useEffect(() => {
     loadProfile();
   }, [loadProfile]);
 
-  // Sync draft when profile loads
+  // Initialize draft from profile on first load
   useEffect(() => {
-    if (profile) {
+    if (profile && !initializedRef.current) {
       setDraft({
         name:           profile.name,
         bio:            profile.bio ?? "",
@@ -116,8 +129,9 @@ export const Profile = () => {
         githubUsername: profile.githubUsername ?? "",
         timezone:       profile.timezone,
       });
+      initializedRef.current = true;
     }
-  }, [profile?._id]);
+  }, [profile?.username]);
 
   // Auto-clear messages
   useEffect(() => {
@@ -132,21 +146,10 @@ export const Profile = () => {
     await updateProfile(draft);
   };
 
-  const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) uploadAvatar(file);
-  };
-
-  const handleDeleteAccount = async () => {
-    await deleteAccount();
-    await logout();
-    navigate("/");
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    navigate("/");
-  };
+const handleAvatarChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const file = e.target.files?.[0];
+  if (file) uploadAvatar(file);
+};
 
   const joinedDate = profile?.createdAt
     ? new Date(profile.createdAt).toLocaleDateString("en-US", { month: "short", year: "numeric" })
@@ -398,16 +401,21 @@ export const Profile = () => {
         </div>
       </main>
 
-      {/* Delete Modal */}
-      <AnimatePresence>
-        {showDeleteModal && (
-          <DeleteModal
-            onConfirm={handleDeleteAccount}
-            onCancel={() => setShowDeleteModal(false)}
-            loading={deletingAccount}
-          />
-        )}
-      </AnimatePresence>
+{/* Delete Modal */}
+<AnimatePresence>
+  {showDeleteModal && (
+    <DeleteModal
+      username={profile?.username ?? ""}
+      onConfirm={async (typedUsername) => {
+        await deleteAccount(typedUsername);
+        await logout();
+        navigate("/");
+      }}
+      onCancel={() => setShowDeleteModal(false)}
+      loading={deletingAccount}
+    />
+  )}
+</AnimatePresence>
     </div>
   );
 };

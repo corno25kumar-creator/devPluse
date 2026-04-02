@@ -14,7 +14,7 @@ export interface ProfileState {
   loadProfile: () => Promise<void>;
   updateProfile: (data: UpdateProfilePayload) => Promise<void>;
   uploadAvatar: (file: File) => Promise<void>;
-  deleteAccount: () => Promise<void>;
+  deleteAccount: (username: string) => Promise<void>;
   clearMessages: () => void;
 }
 
