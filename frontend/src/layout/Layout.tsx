@@ -78,10 +78,6 @@ export const Layout = () => {
           </div>
           
           <div className="flex items-center gap-2 md:gap-4">
-            <button className="relative p-2 text-slate-400 hover:text-slate-600 rounded-full">
-              <Bell className="h-5 w-5" />
-              <span className="absolute top-2 right-2 h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
-            </button>
 
             {/* Dynamic Avatar Link */}
             <Link 
