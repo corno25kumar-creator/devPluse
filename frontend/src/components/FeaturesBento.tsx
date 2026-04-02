@@ -1,187 +1,277 @@
+import  { useRef } from "react";
 import { motion } from "motion/react";
-import { Terminal, Code2, Layers, LineChart, Shield } from "lucide-react";
+import { Terminal, Target, Code2, LineChart, Play, CheckCircle2 } from "lucide-react";
 
-export function BentoGrid({
-  className = "",
-  children,
-}: {
-  className?: string;
-  children?: React.ReactNode;
-}) {
+const DashboardMockup = () => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.2 }}
+    className="w-full h-full bg-white rounded-[20px] shadow-2xl overflow-hidden border border-zinc-200/50 flex flex-col font-sans"
+  >
+    <div className="h-10 border-b border-zinc-100 flex items-center px-4 justify-between bg-zinc-50/80">
+      <div className="flex gap-1.5 items-center">
+        <div className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+        <div className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+        <div className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+      </div>
+      <div className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">Dashboard</div>
+    </div>
+    <div className="p-5 flex-1 flex flex-col gap-4 bg-zinc-50/50">
+      <div className="flex gap-4">
+        <motion.div whileHover={{ y: -2 }} className="flex-1 bg-white p-4 rounded-xl border border-zinc-100 shadow-sm transition-shadow hover:shadow-md">
+          <div className="text-zinc-400 text-[10px] uppercase font-bold tracking-wider mb-1">Total Time</div>
+          <div className="text-2xl font-bold text-zinc-800">124h 30m</div>
+        </motion.div>
+        <motion.div whileHover={{ y: -2 }} className="flex-1 bg-white p-4 rounded-xl border border-zinc-100 shadow-sm transition-shadow hover:shadow-md">
+          <div className="text-zinc-400 text-[10px] uppercase font-bold tracking-wider mb-1">Active Streak</div>
+          <div className="text-2xl font-bold text-[#5e43f3]">12 Days</div>
+        </motion.div>
+      </div>
+      <motion.div whileHover={{ y: -2 }} className="flex-1 bg-white rounded-xl border border-zinc-100 shadow-sm p-4 flex items-end justify-between px-6 transition-shadow hover:shadow-md">
+        {[40, 70, 45, 90, 65, 85, 100].map((h, i) => (
+          <motion.div 
+            key={i} 
+            initial={{ height: 0 }}
+            whileInView={{ height: `${h}%` }}
+            transition={{ duration: 0.8, delay: 0.3 + (i * 0.1), type: "spring" }}
+            className="w-[12%] bg-[#5e43f3] rounded-t-md relative group cursor-pointer" 
+            style={{ opacity: 0.8 + (i * 0.05) }}
+          >
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 bg-zinc-800 text-white text-[10px] py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity">
+              {h}h
+            </div>
+          </motion.div>
+        ))}
+      </motion.div>
+    </div>
+  </motion.div>
+);
+
+const SessionMockup = () => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.2 }}
+    className="w-full h-full bg-white rounded-[20px] shadow-2xl overflow-hidden border border-zinc-200/50 flex flex-col font-sans"
+  >
+    <div className="h-10 border-b border-zinc-100 flex items-center px-4 justify-between bg-zinc-50/80">
+      <div className="flex gap-1.5 items-center">
+        <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+        <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+        <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+      </div>
+      <div className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">Log a Session</div>
+    </div>
+    <div className="p-5 flex-1 flex flex-col justify-center items-center bg-zinc-50/50">
+      <motion.div 
+        whileHover={{ scale: 1.02 }}
+        className="bg-white p-8 rounded-2xl border border-zinc-100 shadow-sm w-full max-w-sm flex flex-col items-center gap-6 text-center transition-shadow hover:shadow-lg"
+      >
+        <div className="w-24 h-24 bg-[#5e43f3]/5 rounded-full flex items-center justify-center relative shadow-inner">
+          <motion.div 
+            animate={{ rotate: 360 }}
+            transition={{ duration: 8, repeat: Infinity, ease: "linear" }}
+            className="absolute inset-0 border-4 border-[#5e43f3]/20 border-t-[#5e43f3] rounded-full" 
+          />
+          <Play className="w-10 h-10 text-[#5e43f3] ml-1" />
+        </div>
+        <div>
+          <div className="text-4xl font-mono font-bold text-zinc-800 tracking-tighter mb-2">02:45:12</div>
+          <div className="text-xs uppercase tracking-widest font-semibold text-zinc-400">Working on: Backend API</div>
+        </div>
+        <div className="w-full flex gap-3 mt-4">
+          <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }} className="flex-1 py-3 rounded-xl bg-zinc-100 text-zinc-600 text-[11px] uppercase tracking-wider font-bold transition-colors hover:bg-zinc-200">Pause</motion.button>
+          <motion.button whileHover={{ y: -2 }} whileTap={{ scale: 0.95 }} className="flex-1 py-3 rounded-xl bg-[#5e43f3] text-white text-[11px] uppercase tracking-wider font-bold shadow-lg shadow-[#5e43f3]/30 transition-colors hover:bg-[#4d35ce]">Complete</motion.button>
+        </div>
+      </motion.div>
+    </div>
+  </motion.div>
+);
+
+const GoalMockup = () => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.2 }}
+    className="w-full h-full bg-white rounded-[20px] shadow-2xl overflow-hidden border border-zinc-200/50 flex flex-col font-sans"
+  >
+    <div className="h-10 border-b border-zinc-100 flex items-center px-4 justify-between bg-zinc-50/80">
+      <div className="flex gap-1.5 items-center">
+        <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+        <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+        <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+      </div>
+      <div className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">Goals</div>
+    </div>
+    <div className="p-5 flex-1 flex flex-col gap-4 bg-zinc-50/50 justify-center">
+      {["Launch MVP", "Learn GraphQL", "Write Documentation"].map((goal, i) => (
+        <motion.div 
+          key={i} 
+          whileHover={{ x: 5 }}
+          className="bg-white p-5 rounded-2xl border border-zinc-100 shadow-sm flex flex-col gap-4 transition-all hover:shadow-md cursor-pointer"
+        >
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <motion.div 
+                whileHover={{ scale: 1.1 }}
+                className={`p-1.5 rounded-full ${i === 0 ? 'bg-[#5e43f3]/10' : 'bg-zinc-100'}`}
+              >
+                <CheckCircle2 className={`w-4 h-4 ${i === 0 ? 'text-[#5e43f3]' : 'text-zinc-300'}`} />
+              </motion.div>
+              <span className={`text-[13px] uppercase tracking-wider font-bold ${i === 0 ? 'text-zinc-800' : 'text-zinc-500'}`}>{goal}</span>
+            </div>
+            <span className="text-[11px] font-bold text-[#5e43f3] bg-[#5e43f3]/10 py-1 px-2 rounded-full">{100 - (i * 30)}%</span>
+          </div>
+          <div className="w-full bg-zinc-100 rounded-full h-1.5 overflow-hidden">
+            <motion.div 
+              initial={{ width: 0 }}
+              whileInView={{ width: `${100 - (i * 30)}%` }}
+              transition={{ duration: 1, delay: 0.5 + (i * 0.2), ease: "easeOut" }}
+              className="bg-[#5e43f3] h-full rounded-full" 
+            />
+          </div>
+        </motion.div>
+      ))}
+    </div>
+  </motion.div>
+);
+
+const SkillMockup = () => (
+  <motion.div 
+    initial={{ opacity: 0, y: 20 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    transition={{ duration: 0.5, delay: 0.2 }}
+    className="w-full h-full bg-white rounded-[20px] shadow-2xl overflow-hidden border border-zinc-200/50 flex flex-col font-sans"
+  >
+    <div className="h-10 border-b border-zinc-100 flex items-center px-4 justify-between bg-zinc-50/80">
+      <div className="flex gap-1.5 items-center">
+        <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+        <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+        <div className="w-2.5 h-2.5 rounded-full bg-zinc-300" />
+      </div>
+      <div className="text-[10px] font-medium text-zinc-400 uppercase tracking-widest">Skills</div>
+    </div>
+    <div className="p-5 flex-1 flex flex-col gap-4 bg-zinc-50/50">
+      <div className="grid grid-cols-2 gap-4 h-full">
+        {[{ name: "React", level: 90 }, { name: "TypeScript", level: 85 }, { name: "Node.js", level: 70 }, { name: "MongoDB", level: 60 }].map((skill, i) => (
+          <motion.div 
+            key={i} 
+            whileHover={{ scale: 1.05 }}
+            className="bg-white p-4 rounded-2xl border border-zinc-100 shadow-sm flex flex-col justify-center items-center gap-4 transition-all hover:shadow-md cursor-pointer"
+          >
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <svg className="w-full h-full transform -rotate-90 drop-shadow-sm" viewBox="0 0 36 36">
+                <path
+                  className="text-zinc-100"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3.5"
+                />
+                <motion.path
+                  initial={{ strokeDasharray: "0, 100" }}
+                  whileInView={{ strokeDasharray: `${skill.level}, 100` }}
+                  transition={{ duration: 1.5, delay: 0.5 + (i * 0.1), ease: "easeOut" }}
+                  className="text-[#5e43f3]"
+                  d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="3.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              <div className="absolute inset-0 flex items-center justify-center text-[11px] font-extrabold text-zinc-800">{skill.level}</div>
+            </div>
+            <div className="text-[11px] uppercase tracking-wider font-bold text-zinc-600">{skill.name}</div>
+          </motion.div>
+        ))}
+      </div>
+    </div>
+  </motion.div>
+);
+
+const features = [
+  {
+    title: "Insightful Dashboard",
+    description: "Your complete workflow visualized. Spot trends, maintain streaks, and see exactly where your time goes across projects and tech stacks.",
+    mockup: <DashboardMockup />,
+    icon: <LineChart className="w-6 h-6 text-[#5e43f3]" />
+  },
+  {
+    title: "Deep Work Sessions",
+    description: "A distraction-free zone for logging your coding sessions. Track your active flow state and pause gracefully without losing context.",
+    mockup: <SessionMockup />,
+    icon: <Terminal className="w-6 h-6 text-[#5e43f3]" />
+  },
+  {
+    title: "Actionable Goals",
+    description: "Break complex epics into bite-sized milestones. See real-time progress bars update as you log sessions towards your active targets.",
+    mockup: <GoalMockup />,
+    icon: <Target className="w-6 h-6 text-[#5e43f3]" />
+  },
+  {
+    title: "Skill Progression",
+    description: "Quantify your expertise. Automatically build your skill tree based on the technologies you use during your tracked sessions.",
+    mockup: <SkillMockup />,
+    icon: <Code2 className="w-6 h-6 text-[#5e43f3]" />
+  }
+];
+
+export const FeaturesBento = () => {
   return (
-    <div
-      className={`grid md:auto-rows-[18rem] grid-cols-1 md:grid-cols-3 gap-4 max-w-7xl mx-auto ${className}`}
-    >
-      {children}
+    <div className="w-full bg-[#0a0a0c] py-24">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex flex-col gap-32">
+          {features.map((feature, idx) => (
+            <FeatureRow 
+              key={idx} 
+              feature={feature} 
+              isReversed={idx % 2 !== 0} 
+            />
+          ))}
+        </div>
+      </div>
     </div>
   );
-}
+};
 
-export function BentoGridItem({
-  className = "",
-  title,
-  description,
-  header,
-  icon,
-}: {
-  className?: string;
-  title?: string | React.ReactNode;
-  description?: string | React.ReactNode;
-  header?: React.ReactNode;
-  icon?: React.ReactNode;
-}) {
+const FeatureRow = ({ feature, isReversed }: { feature: any, isReversed: boolean }) => {
+  const ref = useRef(null);
+  
   return (
-    <motion.div
-      whileHover={{ y: -5 }}
-      transition={{ type: "spring", stiffness: 300, damping: 20 }}
-      className={`row-span-1 rounded-xl group/bento hover:shadow-xl transition duration-200 shadow-input dark:shadow-none p-4 dark:bg-zinc-900 dark:border-zinc-800 bg-white border border-transparent justify-between flex flex-col space-y-4 ${className}`}
+    <motion.div 
+      ref={ref}
+      initial={{ opacity: 0, y: 100 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true, margin: "-100px" }}
+      transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+      className={`flex flex-col gap-12 lg:gap-24 items-center ${isReversed ? 'lg:flex-row-reverse' : 'lg:flex-row'}`}
     >
-      {header}
-      <div className="group-hover/bento:translate-x-2 transition duration-200">
-        {icon}
-        <div className="font-bold text-neutral-600 dark:text-neutral-200 mb-2 mt-2">
-          {title}
+      <div className="flex-1 space-y-6 text-center lg:text-left">
+        <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#5e43f3]/10 border border-[#5e43f3]/20 mb-2">
+          {feature.icon}
         </div>
-        <div className="font-normal text-neutral-600 dark:text-neutral-400 text-sm">
-          {description}
+        <h3 className="text-4xl sm:text-5xl font-bold tracking-tight text-white">
+          {feature.title}
+        </h3>
+        <p className="text-xl text-zinc-400 max-w-xl mx-auto lg:mx-0 leading-relaxed">
+          {feature.description}
+        </p>
+      </div>
+      
+      <div className="flex-1 w-full max-w-xl lg:max-w-none">
+        <div className="relative aspect-square sm:aspect-4/3 rounded-3xl bg-linear-to-br from-[#5e43f3]/20 to-transparent p-1">
+          <div className="absolute inset-0 bg-zinc-900/50 rounded-3xl backdrop-blur-3xl" />
+          <motion.div 
+            whileHover={{ scale: 1.02 }}
+            transition={{ type: "spring", stiffness: 300, damping: 20 }}
+            className="relative w-full h-full rounded-[23px] overflow-hidden"
+          >
+            {feature.mockup}
+          </motion.div>
         </div>
       </div>
     </motion.div>
   );
-}
-
-const Skeleton = ({
-  children,
-  className = "",
-}: {
-  children?: React.ReactNode;
-  className?: string;
-}) => (
-  <div
-    className={`flex flex-1 w-full h-full min-h-[6rem] rounded-xl 
-    dark:bg-dot-white/[0.2] bg-dot-black/[0.2] 
-    [mask-image:radial-gradient(ellipse_at_center,white,transparent)] 
-    border border-transparent dark:border-white/[0.2] 
-    bg-neutral-100 dark:bg-zinc-950 
-    flex-col items-center justify-center relative overflow-hidden ${className}`}
-  >
-    {children}
-  </div>
-);
-
-export const FeaturesBento = () => {
-  return (
-    <BentoGrid className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
-      {items.map((item, i) => (
-        <BentoGridItem
-          key={i}
-          title={item.title}
-          description={item.description}
-          header={item.header}
-          icon={item.icon}
-          className={i === 0 || i === 3 ? "md:col-span-2" : ""}
-        />
-      ))}
-    </BentoGrid>
-  );
 };
-
-const SessionVisual = () => (
-  <Skeleton className="bg-gradient-to-br from-indigo-500/10 to-purple-500/10 dark:border-indigo-500/20">
-    <div className="absolute inset-0 flex items-center justify-center">
-      <div className="flex flex-col gap-2 items-center">
-        <motion.div
-          animate={{ scale: [1, 1.05, 1], opacity: [0.5, 1, 0.5] }}
-          transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
-          className="h-16 w-16 rounded-full border-2 border-indigo-500 flex items-center justify-center bg-indigo-500/10"
-        >
-          <Terminal className="text-indigo-400 w-6 h-6" />
-        </motion.div>
-        <span className="text-indigo-400/80 font-mono text-xs">
-          Active Session: 02:45:12
-        </span>
-      </div>
-    </div>
-  </Skeleton>
-);
-
-const GoalVisual = () => (
-  <Skeleton className="bg-gradient-to-br from-emerald-500/10 to-teal-500/10 dark:border-emerald-500/20">
-    <div className="w-full px-6 flex flex-col gap-3">
-      {[100, 60, 30].map((width, i) => (
-        <div key={i} className="flex flex-col gap-1">
-          <div className="h-2 w-full bg-emerald-950 rounded-full overflow-hidden">
-            <motion.div
-              initial={{ width: 0 }}
-              whileInView={{ width: `${width}%` }}
-              transition={{ duration: 1, delay: i * 0.2 }}
-              className="h-full bg-emerald-500"
-            />
-          </div>
-          <span className="text-emerald-500/50 text-[10px] font-mono uppercase tracking-wider">
-            Milestone {i + 1}
-          </span>
-        </div>
-      ))}
-    </div>
-  </Skeleton>
-);
-
-const SkillVisual = () => (
-  <Skeleton className="bg-gradient-to-br from-amber-500/10 to-orange-500/10 dark:border-amber-500/20">
-    <div className="flex items-end justify-center gap-2 h-24">
-      {[40, 70, 50, 90, 60].map((height, i) => (
-        <motion.div
-          key={i}
-          initial={{ height: 0 }}
-          whileInView={{ height: `${height}%` }}
-          transition={{ duration: 0.5, delay: i * 0.1, type: "spring" }}
-          className="w-8 bg-amber-500/80 rounded-t-sm"
-        />
-      ))}
-    </div>
-  </Skeleton>
-);
-
-const DataVisual = () => (
-  <Skeleton className="bg-gradient-to-br from-blue-500/10 to-cyan-500/10 dark:border-blue-500/20">
-    <div className="absolute inset-0 bg-[linear-gradient(to_right,#4f4f4f2e_1px,transparent_1px),linear-gradient(to_bottom,#4f4f4f2e_1px,transparent_1px)] bg-[size:14px_24px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)]"></div>
-    <div className="relative z-10 flex flex-col items-center">
-      <Shield className="w-10 h-10 text-blue-400 mb-2" />
-      <p className="text-blue-200 font-mono text-sm">
-        Full Data Export Ready
-      </p>
-    </div>
-  </Skeleton>
-);
-
-const items = [
-  {
-    title: "Deep Work Sessions",
-    description:
-      "Start, pause, and log dedicated coding sessions. Track your flow state and minimize context switching.",
-    header: <SessionVisual />,
-    icon: <Terminal className="h-4 w-4 text-neutral-500" />,
-  },
-  {
-    title: "Break Down Goals",
-    description:
-      "Split complex epics into manageable milestones. Pin active targets and archive completed ones.",
-    header: <GoalVisual />,
-    icon: <Layers className="h-4 w-4 text-neutral-500" />,
-  },
-  {
-    title: "Skill Progression",
-    description:
-      "Quantify your learning. Track the tech stack you're mastering across different projects.",
-    header: <SkillVisual />,
-    icon: <Code2 className="h-4 w-4 text-neutral-500" />,
-  },
-  {
-    title: "Developer Analytics & Privacy",
-    description:
-      "Your personal command center. Comprehensive dashboard with 100% data export capabilities and strict privacy settings.",
-    header: <DataVisual />,
-    icon: <LineChart className="h-4 w-4 text-neutral-500" />,
-  },
-];

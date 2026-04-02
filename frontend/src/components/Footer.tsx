@@ -1,14 +1,14 @@
-import {  X, Terminal } from "lucide-react";
-import { FaGithub, FaLinkedin } from "react-icons/fa";
+import {  Terminal } from "lucide-react";
+import { FaGithub, FaLinkedin, FaTwitter } from "react-icons/fa";
 
 export const Footer = () => {
   return (
-    <footer className="bg-zinc-950 border-t border-zinc-900 pt-16 pb-8">
+    <footer className="bg-[#0a0a0c] border-t border-zinc-900/50 pt-16 pb-8">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 md:grid-cols-4 gap-12 mb-12">
           <div className="col-span-1 md:col-span-1">
             <div className="flex items-center gap-2 mb-4">
-              <div className="h-6 w-6 bg-indigo-500 rounded-md flex items-center justify-center">
+              <div className="h-6 w-6 bg-[#5e43f3] rounded-md flex items-center justify-center">
                 <Terminal className="text-white h-4 w-4" />
               </div>
               <span className="text-white font-bold text-lg tracking-tight">DevTrack</span>
@@ -21,7 +21,7 @@ export const Footer = () => {
                 <FaGithub className="h-5 w-5" />
               </a>
               <a href="#" className="text-zinc-400 hover:text-white transition-colors">
-                <X className="h-5 w-5" />
+                <FaTwitter className="h-5 w-5" />
               </a>
               <a href="#" className="text-zinc-400 hover:text-white transition-colors">
                 <FaLinkedin className="h-5 w-5" />
